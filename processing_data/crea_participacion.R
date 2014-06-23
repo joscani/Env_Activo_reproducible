@@ -83,3 +83,7 @@ tmp2$act7.y <- NULL
 share.def2 <- tmp2
 
 with(share.def2, prop.table(table(id_ola, participacion),1))
+
+# Salvar fichero 
+
+save(share.def2, file="tempData/share_def2.RData")
