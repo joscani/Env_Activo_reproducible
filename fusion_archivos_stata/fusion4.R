@@ -103,64 +103,46 @@ posicion <- names(cf)%in%c("mergeid","cf003_","cf004_","cf005_","cf006_",
                            "cf012_","cf013_","cf014_","cf015_")
 cf.new <- cf[,posicion]
 
-# pongo los atributos correspondientes a las variables seleccionadas
-
-attributes(cf.new)$val.labels <- attributes(cf)$val.labels[posicion]
-attributes(cf.new)$var.labels <- attributes(cf)$var.labels[posicion]
 
 # uno unido4 con cf.new por la variable "mergeid"
 unido5 <- merge(unido4, cf.new, by="mergeid")
 
-# creo los atributos de unido4
-attributes(unido5)$val.labels <- c(attributes(unido4)$val.labels,attributes(cf.new)$val.labels[-1])
-attributes(unido5)$var.labels <- c(attributes(unido4)$var.labels,attributes(cf.new)$var.labels[-1])
 
 # borro unido4
 rm(unido4)
 
 # Módulo MH
 
-mh<- read.dta("../data/wave4/stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_mh.dta")
+mh<- read.dta("../an_longitudinal/data/wave4/stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_mh.dta")
 posicion <- names(mh)%in%c("mergeid",paste0(paste0("mh00",2:9),"_"),
                           paste0(paste0("mh0",10:17),"_"))
 mh.new <- mh[,posicion]
 
-# pongo los atributos correspondientes a las variables seleccionadas
-
-attributes(mh.new)$val.labels <- attributes(mh)$val.labels[posicion]
-attributes(mh.new)$var.labels <- attributes(mh)$var.labels[posicion]
-
 # uno unido5 con mh.new por la variable "mergeid"
 unido6 <- merge(unido5, mh.new, by="mergeid")
-
-# creo los atributos de unido5
-attributes(unido6)$val.labels <- c(attributes(unido5)$val.labels,attributes(mh.new)$val.labels[-1])
-attributes(unido6)$var.labels <- c(attributes(unido5)$var.labels,attributes(mh.new)$var.labels[-1])
 
 # borro unido5
 rm(unido5)
 
 # Módulo EP
 
-ep<- read.dta("../data/wave4/stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_ep.dta")
+ep<- read.dta("../an_longitudinal/data/wave4/stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_ep.dta")
 posicion <- names(ep) %in% c("mergeid", "ep005_")
 ep.new <- ep[,posicion]
 
-# pongo los atributos correspondientes a las variables seleccionadas
-
-attributes(ep.new)$val.labels <- attributes(ep)$val.labels[posicion]
-attributes(ep.new)$var.labels <- attributes(ep)$var.labels[posicion]
-
 # uno unido6 con ep.new por la variable "mergeid"
 unido7 <- merge(unido6, ep.new, by="mergeid")
-
-# creo los atributos de unido6
-attributes(unido7)$val.labels <- c(attributes(unido6)$val.labels,attributes(ep.new)$val.labels[-1])
-attributes(unido7)$var.labels <- c(attributes(unido6)$var.labels,attributes(ep.new)$var.labels[-1])
 
 # borro unido6
 rm(unido6)
 
 ola4 <- unido7
 
+if(!file.exists("tempData")){
+	dir.create("tempData")
+}
 
+if(!file.exists("tempData/ola4.RData")){
+	save(ola4,file="tempData/ola4.RData")
+}
+rm(list=ls())
