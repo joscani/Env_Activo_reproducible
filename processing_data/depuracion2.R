@@ -73,3 +73,4 @@ rm(paises.no)
 rm(tb.paises)
 rm(filtro.edad)
 
+save(share.clean.paises.3.olas,file="tempData/share_def4.RData")
