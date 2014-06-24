@@ -6,14 +6,54 @@
 load("tempData/share_def2.RData")
 
 load("../an_longitudinal/data/easyshare.RData")
+
+###################################
+# Cargo easyshare con las variables que quiero unir
 tmp <- easyshare[,c("id_across_wave","sphus","chronic_mod","casp",
-						  "adla","iadlza")]
+						  "adla","iadlza","mar_stat","eduyears_mod")]
 
 
-share  <- merge(share.def2,tmp,by="id_across_wave")
+# uno 
+share  <- merge(share.clean,tmp,by="id_across_wave")
 
+# lo llamo share.clean
 share.clean <- share
 rm(share)
+
+share.clean$mar_stat <- droplevels(share.clean$mar_stat)
+Encoding(levels(share.clean$mar_stat)) <- "latin1"
+share.clean$eduyears_mod[share.clean$eduyears_mod<0] <- NA 
+
+share.clean <- subset(share.clean, is.na(iv020_))
+
+##################################
+# Crear variable incapacidad , que vale 1 si contesta al menos un 1 en las p006d
+# son la ph006d1, ph006d4, ph006d5, ph006d6, ph006d10, ph006d12, ph006d14 
+
+# crear variables que valen 1 si hace actividad y 0 si no
+share.clean$incap1 <- ifelse(share.clean$ph006d1=="selected",1,0 )
+share.clean$incap4 <- ifelse(share.clean$ph006d4=="selected",1,0 )
+share.clean$incap5 <- ifelse(share.clean$ph006d5=="selected",1,0 )
+
+share.clean$incap6 <- ifelse(share.clean$ph006d6=="selected",1,0 )
+share.clean$incap10 <- ifelse(share.clean$ph006d10=="selected",1,0 )
+
+share.clean$incap12 <- ifelse(share.clean$ph006d12=="selected",1,0 )
+share.clean$incap14 <- ifelse(share.clean$ph006d14=="selected",1,0 )
+
+share.clean$n.incap <- with(share.clean, incap1 + incap4 + incap5 + incap6 +
+								  	incap10 + incap12 + incap14)
+share.clean$incapacidad <- as.factor(ifelse(share.clean$n.incap>=1,"incap_SI","incap_NO"))
+
+share.clean$age[share.clean$age<0] <- NA
+share.clean$gender[share.clean$gender=="0. male"]<- "male"
+share.clean$gender[share.clean$gender=="1. female"]<- "female"
+share.clean$gender <- droplevels(share.clean$gender)
+
+##############################################################
+
+
+
 
 table(share.clean$mh002_)
 
