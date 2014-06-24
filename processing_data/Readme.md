@@ -12,6 +12,7 @@
 * unir_ola1_ola2.R
 * union_sharew4_y_ola4.R
 * crea_participacion.R
+* depuracion1.R
 
 Pdte: Crear script que con source los haga todos. Crear rutas relativas a los ficheros
 
