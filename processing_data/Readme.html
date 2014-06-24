@@ -64,7 +64,109 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <li>fusion1.R</li>
 <li>fusion2.R</li>
 <li>fusion3.R</li>
+<li>fusion4.R</li>
+<li>unir_ola1_ola2.R</li>
+<li>union_sharew4_y_ola4.R</li>
+<li>crea_participacion.R</li>
+<li>depuracion1.R</li>
+<li>depuracion2.R</li>
 </ul>
+<p>Pdte: Crear script que con source los haga todos. Crear rutas relativas a los ficheros</p>
+</div>
+<div id="particularidades-de-los-ficheros-share" class="section level2">
+<h2>Particularidades de los ficheros share</h2>
+<p>Hay cambios de nombres de variables entre la ola 1 y la ola 2. También con respecto a la ola 4 pero en la ola 4 hay incluso preguntas que se hacen de manera distinta (en olas 1 y 2 se pregunta por frecuencia mensual y en ola 4 anual)</p>
+<p>Los datos originales vienen en diferentes módulos para cada ola y se han tenido que fusionar. Un proceso delicado, ya que para cada ola había que fundir archivos por la variable identificadora <em>mergeid</em> y luego había que unir los ficheros de las 3 olas (1,2,4). Otro problema añadido es que en la ola4 cambia el nombre de algunas variables u otras directamente no están. Esto se ha solventado en parte utilizando el fichero easyshare que contiene datos relativos a las 3 olas</p>
+</div>
+<div id="variables" class="section level2">
+<h2>Variables</h2>
+<div id="participacion" class="section level3">
+<h3>Participación</h3>
+<p>La variable de participación se construye a partir de 5 variables de actividades. Las actividades son:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">BD</th>
+<th align="left">nombre</th>
+<th align="center">ola1/2</th>
+<th align="right">ola4</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">act1</td>
+<td align="left">Done voluntary or charity work</td>
+<td align="center">ac002d1</td>
+<td align="right">ac035d1</td>
+</tr>
+<tr class="even">
+<td align="left">act4</td>
+<td align="left">Attended an educational or training course</td>
+<td align="center">ac002d4</td>
+<td align="right">ac035d4</td>
+</tr>
+<tr class="odd">
+<td align="left">act5</td>
+<td align="left">Gone to a sport, social or other kind of club</td>
+<td align="center">ac002d5</td>
+<td align="right">ac035d5</td>
+</tr>
+<tr class="even">
+<td align="left">act6</td>
+<td align="left">Taken part in activities of a religious organization</td>
+<td align="center">ac002d6</td>
+<td align="right">ac035d6</td>
+</tr>
+<tr class="odd">
+<td align="left">act7</td>
+<td align="left">Taken part in a political or community-related organization</td>
+<td align="center">ac002d7</td>
+<td align="right">ac035d7</td>
+</tr>
+</tbody>
+</table>
+<p>Se define la variable participación como 1 (partic) si se ha realizado alguna de estas actividades. Hay que notar que en las olas 1 y 2 se pregunta por la realización de las actividades durante el último mes, mientras que en la ola4 se pregunta por el último año. Con el fin de unificar criterios, en la medida de lo posible, se ha considerado como que si participan a los encuestados en la ola4 que hayan participado frecuentemente en alguna de las actividades.</p>
+<p>El criterio adoptado es el de considerar participación frecuente la participación diaria, semanal, mensual o en la mayoría de los meses del año. Si el encuestado contesta que durante el año ha realizado alguna de las actividades pero con menor frecuencia se le clasifica como no partipante.</p>
+</div>
+</div>
+<div id="descripcion-scripts" class="section level2">
+<h2>Descripción scripts</h2>
+<div id="fusion1.r" class="section level3">
+<h3>fusion1.R</h3>
+<p>Este fichero lee los datos en formato stata de la ola1.</p>
+<p>Se utilizan los módulos <em>AC</em>, <em>IV</em>, <em>DN</em>, <em>PH</em>, <em>GEN_PH</em>, <em>CF</em>, <em>MH</em>, <em>EP</em> y se fusionan en un sólo fichero (para qué variables se seleccionan de cada módulo ver el script)</p>
+<p>También se calcula el índice cognitive, de la siguiente forma y se salvan los datos en “tempData/ola1.RData”</p>
+<pre><code>cogn1 &lt;- ifelse(as.numeric(ola1$cf003_)==3,1,0)
+cogn1[is.na(ola1$cf003_)] &lt;- 0
+
+cogn2 &lt;- ifelse(as.numeric(ola1$cf004_)==3,1,0)
+cogn2[is.na(ola1$cf004_)] &lt;- 0
+
+cogn3 &lt;- ifelse(as.numeric(ola1$cf005_)==3,1,0)
+cogn3[is.na(ola1$cf005_)] &lt;- 0
+
+cogn4 &lt;- ifelse(as.numeric(ola1$cf006_)==3,1,0)
+cogn4[is.na(ola1$cf006_)] &lt;- 0
+
+comp1 &lt;- cogn1+cogn2+cogn3+cogn4
+comp2 &lt;- with(ola1,cf008tot+cf016tot)
+comp2[is.na(comp2)] &lt;- 0
+
+comp3 &lt;- ola1$numeracy
+
+cognitive &lt;- comp1 + comp2 + comp3
+cognitive[is.na(cognitive)] &lt;- 0
+
+ola1$cognitive &lt;- cognitive</code></pre>
+</div>
+</div>
+<div id="fusion2.r" class="section level2">
+<h2>fusion2.R</h2>
+<p>Hace exactamente lo mismo que <code>fusion1.R</code> pero con los datos de la ola2</p>
+</div>
+<div id="fusion4.r" class="section level2">
+<h2>fusion4.R</h2>
+<p>En la ola 4 algunas variables han cambiado de nombre y no se pregunta exactamente lo mismo. Tal es el caso de las variables de actividad que son en las que nos basaremos para construir la variable participación</p>
 </div>
 </div>
 

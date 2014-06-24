@@ -1,3 +1,11 @@
+---
+output:
+  html_document: default
+  pdf_document:
+    highlight: haddock
+    toc: yes
+  word_document: default
+---
 # Explicación de ficheros de fusion
 
 ## Descargar datos desde share
@@ -7,8 +15,8 @@
 
 * fusion1.R
 * fusion2.R
-* fusion3.R
 * fusion4.R
+* leer_easyshare.R
 * unir_ola1_ola2.R
 * union_sharew4_y_ola4.R
 * crea_participacion.R
@@ -48,3 +56,46 @@ act7 | Taken part in a political or community-related organization | ac002d7    
 Se define la variable participación como 1 (partic) si se ha realizado alguna de estas actividades. Hay que notar que en las olas 1 y 2 se pregunta por la realización de las actividades durante el último mes, mientras que en la ola4 se pregunta por el último año. Con el fin de unificar criterios, en la medida de lo posible, se ha considerado como que si participan a los encuestados en la ola4 que hayan participado frecuentemente en alguna de las actividades.
 
 El criterio adoptado es el de considerar participación frecuente la participación diaria, semanal, mensual o en la mayoría de los meses del año. Si el encuestado contesta que durante el año ha realizado alguna de las actividades pero con menor frecuencia se le clasifica como no partipante.
+
+## Descripción scripts
+
+### fusion1.R
+
+Este fichero lee los datos en formato stata de la ola1. 
+
+Se utilizan los módulos *AC*, *IV*, *DN*, *PH*, *GEN_PH*, *CF*, *MH*, *EP* y se fusionan en un sólo fichero (para qué variables se seleccionan de cada módulo ver el script)
+
+También se calcula el índice cognitive, de la siguiente forma y se salvan los datos en "tempData/ola1.RData"
+
+```
+cogn1 <- ifelse(as.numeric(ola1$cf003_)==3,1,0)
+cogn1[is.na(ola1$cf003_)] <- 0
+
+cogn2 <- ifelse(as.numeric(ola1$cf004_)==3,1,0)
+cogn2[is.na(ola1$cf004_)] <- 0
+
+cogn3 <- ifelse(as.numeric(ola1$cf005_)==3,1,0)
+cogn3[is.na(ola1$cf005_)] <- 0
+
+cogn4 <- ifelse(as.numeric(ola1$cf006_)==3,1,0)
+cogn4[is.na(ola1$cf006_)] <- 0
+
+comp1 <- cogn1+cogn2+cogn3+cogn4
+comp2 <- with(ola1,cf008tot+cf016tot)
+comp2[is.na(comp2)] <- 0
+
+comp3 <- ola1$numeracy
+
+cognitive <- comp1 + comp2 + comp3
+cognitive[is.na(cognitive)] <- 0
+
+ola1$cognitive <- cognitive
+```
+
+## fusion2.R
+Hace exactamente lo mismo que `fusion1.R` pero con los datos de la ola2
+
+
+## fusion4.R
+
+En la ola 4 algunas variables han cambiado de nombre y no se pregunta exactamente lo mismo. Tal es el caso de las variables de actividad que son en las que nos basaremos para construir la variable participación. Por lo demás hace lo mismo 
