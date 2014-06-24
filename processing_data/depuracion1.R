@@ -14,7 +14,7 @@ tmp <- easyshare[,c("id_across_wave","sphus","chronic_mod","casp",
 
 
 # uno 
-share  <- merge(share.clean,tmp,by="id_across_wave")
+share  <- merge(share.def2,tmp,by="id_across_wave")
 
 # lo llamo share.clean
 share.clean <- share
