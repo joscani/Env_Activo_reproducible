@@ -73,4 +73,19 @@ rm(paises.no)
 rm(tb.paises)
 rm(filtro.edad)
 
-# save(share.clean.paises.3.olas,file="tempData/share_def4.RData")
+# eliminar cohorte más joven (1965,2013]) 
+share.clean.paises.3.olas <- share.clean.paises.3.olas[as.numeric(share.clean.paises.3.olas$dn003_cat) <10 ,]
+share.clean.paises.3.olas$dn003_cat <- droplevels(share.clean.paises.3.olas$dn003_cat)
+
+# eliminar aquellos que no dicen la edad
+share.clean.paises.3.olas <- share.clean.paises.3.olas[!is.na(share.clean.paises.3.olas$age),]
+
+
+# eliminar menores de 50
+
+share.clean.paises.3.olas <- share.clean.paises.3.olas[as.numeric(share.clean.paises.3.olas$age_cat)>1, ]
+
+share.clean.paises.3.olas$age_cat <- droplevels(share.clean.paises.3.olas$age_cat)
+levels(share.clean.paises.3.olas$age_cat2)[1] <- "(50,55]"
+
+save(share.clean.paises.3.olas,file="tempData/share_def4.RData")
