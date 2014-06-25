@@ -1,0 +1,160 @@
+## ENFOQUE MULTINIVEL
+
+Al tratarse de datos de panel, en los que hay individuos que participan en varias oleadas, no podemos considerar las observaciones como independientes. Más aún, podríamos considerar a los individuos como factor aleatorio anidado dentro de las cohortes, y así recogemos esa estructura de correlación. 
+
+Es decir, asumimos que la participación presenta correlación entre individuos de la misma cohorte y también dentro de la respuesta de cada individuo en las diferentes olas.
+
+```{r carga, echo=FALSE}
+load("../data/share_def4.RData")
+```
+```{r librerias, echo=FALSE, message=FALSE,warning=FALSE}
+library(ggplot2)
+library(lme4)
+library(scales)
+```
+
+
+### Un poco de teoría
+
+
+#### Modelo regresión logística clásico
+
+$$P[y_{i}=1]= \text{logit}^{-1} (\mathbf{X}_i\beta)$$
+
+Notamos $P[y_{i}=1]$ a la probabilidad de que un individuo i tenga como valor "partic" en la variable participación
+
+Supongamos un modelo de regresión logística en el que la única variable explicativa es la cohorte. Al tener 10 cohortes hay que introducir en el modelo 9 variables indicadoras (0-1). Una formulación del modelo, tomando la última cohorte como de referencia, sería la siguiente.
+
+$$P[y_{i}=1]= \text{logit}^{-1} (\beta_0+\alpha_1\cdot cohorte_1 +\ldots + \alpha_9\cdot cohorte_9  )$$
+
+Dónde las variable $cohorte_i$ vale 1 si la observación pertenece a la cohorte i y 0 en otro caso.
+
+Este modelo tiene 10 parámetros ( Una constante y 9 coeficientes asociados a las variables indicadoras). Y como hemos visto antes, (en el texto de la aclaración), un modelo de regresión logística nos permite estimar la proporción marginal en cada categoría. De hecho esta estimación coincide con las proporciones medias muestrales. Nótese que para ese cálculo en una cohorte particular lo único que hace falta es saber el número de casos que participan y el número de casos totales en dicha cohorte. 
+Imaginemos que tenemos una cohorte con muy pocos casos en la muestra, nuestra confianza sobre la estimación en dicha cohorte sería bastante menor que la obtenida para una cohorte con mayor número de casos. Esta es una de las razones, aunque no la única, por la que surgieron los modelos mixtos.
+
+#### Modelo mixto
+
+Supongamos un modelo mixto con un sólo factor aleatorio, por ejemplo para la variable cohorte
+
+$$P[y_{i}=1]= \text{logit}^{-1} (\alpha_0+\alpha^{cohorte}_{j[i]})$$
+
+$$ \alpha^{cohorte}_j \backsim\mathcal{N}(0,\sigma^2_{cohorte}) $$
+
+En este modelo se estima la constante y la varianza del factor aleatorio *cohorte*, por lo que tiene sólo 2 parámetros frente a los 9 del modelo logístico clásico equivalente.
+
+El modelo estima varianzas, pero una vez estimada se pueden realizar predicciones para las  medias en cada grupo, realizando una estimación ponderada. Es lo que se llama un BLUP (Best Linear Unbiased Prediction). Por ejemplo para la cohorte 1.
+
+
+
+$$\widehat{\alpha}^{multinivel}_{cohorte 1}\approx\dfrac{\frac{n_{cohorte 1}}{\sigma^2_y}\bar{y}_{cohorte 1}+\frac{1}{\sigma^2_{cohorte 1}}\bar{y}_{total}}{\frac{n_{cohorte 1}}{\sigma^2_y}+\frac{1}{\sigma^2_{cohorte}}}$$
+
+Dónde 
+$\widehat{\alpha}^{multinivel}_{cohorte 1}$ se corresponde con la modificación que la cohorte 1 añade a la estimación de la constante ($\alpha_0$) en el modelo de regresión logística mixto.
+
+Esta forma de obtener las medias en cada cohorte (más bien proporciones de participación en cada cohorte) suele ser mejor que la que da el modelo de regresión logística clásico, ya que en este caso para estimar la *media* en una cohorte se tiene en cuenta la información de la distribución en el global de cohortes.
+Este método es uno de los usados en estimaciones en áreas pequeñas, y es muy útil cuando se tienen categorías con poco tamaño muestral. Para las categorías con menor muestra BLUP se parece más a la *media global* mientras que para categorías con mayor muestra BLUP se aproxima más a la *media de la categoría* .
+Esta forma de predecir las medias en cada categoría nunca va a funcionar peor que la obtenida por regresión logística clásica y este tipo de modelos son más parsimoniosos e incluyen la ventaja de poder añadir covariables a varios niveles.
+
+El estimador BLUP es más complejo conforme añadimos factores fijos y aleatorios al modelo, pero en general sigue siendo una estimación ponderada en la que se tiene en cuenta el tamaño muestral de la categoría, su media observada, la media global y la varianza estimada por el modelo.
+
+En datos de panel, no se cumple la asunción de que  las observaciones sean i.i.d (independientes e idénticamente distribuidas) y por tanto no es correcto utilizar modelos lineales clásicos (o lineales generalizados como la reg logística). 
+Los modelos mixtos se adaptan a la perfección a este tipo de datos puesto que permiten modelar estructuras de correlación complejas. En nuestro caso, nos permite modelar la correlación entre observaciones del mismo individuo y anidado dentro de cohorte.
+
+
+### Cálculos 
+
+
+Vamos a comprobar en primer lugar que incluir el efecto aleatorio de individuos anidados dentro de cohortes es mejor que el modelo que sólo tiene la media global.
+
+
+
+
+```{r glminicial}
+fit1 <- glm(participacion ~ 1, family=binomial, data=share.clean.paises.3.olas)
+
+```
+
+Modelo mixto considerando los individuos anidados dentro de las cohortes.
+
+
+
+```{r glmer1, cache=FALSE}
+
+fit.glmer.1 <- glmer( participacion ~  (1 | dn003_cat/mergeid) ,
+									nAGQ=0,
+										family=binomial, data=share.clean.paises.3.olas)
+```
+
+No hay forma de comparar ambos modelos mediante un test, pero podemos ver su valor del AIC (Akaike Information Criterium) el cual penaliza los modelos con mayor número de parámetros
+
+```{r message=FALSE}
+AIC(fit1, fit.glmer.1)
+
+```
+Y consideramos como mejor el modelo el que tenga menor AIC
+### Comparación entre las estimaciones de un modelo multinivel y uno clásico
+
+Vamos a representar gráficamente las estimaciones de los porcentajes de participación en cada cohorte por dos modelos.
+* Modelo logístico multinivel (o mixto) dónde se consideran como factores aleatorios los individuos anidados dentro de cohortes.
+* Modelo logístico clásico con la variable cohorte como predictor categórico.
+
+El primer modelo estima 3 parámetros ( una constante, y dos varianzas), mientras que el segundo estima 10 (una constante y 9 coeficientes asociados a variables indicadoras)
+
+En el modelo logístico multinivel se pueden predecir las proporciones medias mediante el estimador BLUP, mientras que en el logístico clásico se utiliza la estimación usual, (estimador BLUE).
+
+```{r cache=FALSE, echo=FALSE}
+suppressPackageStartupMessages(library(arm))
+coeficientes <- coef(fit.glmer.1)
+desv.tipicas <- se.coef(fit.glmer.1)
+
+
+estim <- coeficientes$dn003_cat
+
+desv <- desv.tipicas$dn003_cat
+
+
+Intervalos <- data.frame(low= estim[,1] - 1.96 * desv[,1],estim= estim[,1], high= estim[,1] + 1.96  *desv[,1] )
+
+
+Intervalos.prob <- invlogit(Intervalos)
+Intervalos.prob$cohorte <- levels(share.clean.paises.3.olas$dn003_cat)
+p <- ggplot(Intervalos.prob,aes(cohorte, estim,
+  ymin = low, ymax= high, colour = cohorte))
+
+# p + geom_errorbar(width = 0.5) + coord_flip()
+p + geom_pointrange(size=rel(0.8)) + 	scale_y_continuous(labels = percent, limits=c(0.15,0.55))+ coord_flip() + labs(x="Cohorte",y="Probabilidad (en %)") + ggtitle("Porcentaje de participación estimado por cohorte\n Modelo logístico multinivel")
+```
+
+También podemos comparar con un modelo de regresión logística  equivalente. No pongo los mergeid (individuos) como factor fijo porque sería un modelo con más de 30.000 parámetros
+```{r}
+fit2 <- glm(participacion ~ dn003_cat ,family = binomial, 
+						data = share.clean.paises.3.olas )
+
+```
+```{r echo=FALSE}
+int.confi <- confint.default(fit2)
+# el intercept corresponde a la categoria de referencia
+
+intervalos <- as.data.frame (rbind(int.confi[1,],int.confi[-1,] + coef(fit2)[1]) )
+rownames(intervalos) <- levels(share.clean.paises.3.olas$dn003_cat)
+
+
+#falta calcular la estimación puntual
+estim <- coef(fit2)
+intervalos$estim <- c(estim[1],estim[-1] + estim[1])
+colnames(intervalos) <- c("low","high","estim")
+# pasando a probabilidades
+intervalos.prob <- invlogit(intervalos)
+intervalos.prob$cohorte <- rownames(intervalos.prob)
+
+p <- ggplot(intervalos.prob,aes(cohorte, estim,
+  ymin = low, ymax= high, colour = cohorte))
+
+# p + geom_errorbar(width = 0.5) + coord_flip()
+p + geom_pointrange(size=rel(0.8)) + 	scale_y_continuous(labels = percent, limits=c(0.15,0.55))+ coord_flip() + labs(x="Cohorte",y="Probabilidad (en %)") + ggtitle("Porcentaje de participación estimado por cohorte\n Modelo logístico clásico")
+
+```
+Como vemos, las estimaciones de las proporciones medias en cada cohorte por regresión logística (aunque no hemos podido incluir el efecto de los individuos) y por modelo multinivel son muy parecidas. 
+Pero es preferible el modelo multinivel. En este caso son 3 parámetros frente a 10 y además nos ha permitido tener en cuenta la estructura de dependencia de los datos.
+
+Además en general, el modelo multinivel es más preciso (menor varianza) y tiene menor sesgo (ver por ejemplo  el artículo "How Should We Estimate Public Opinion in The States?" de Jeffrey R. Lax y Justin H. Phillips en American Journal of Political Science, Vol. 53, No. 1, January 2009, Pp. 107–121). Yo he realizado simulaciones utilizando la EPA dónde los modelos logísticos multinivel demuestran mejores propiedades en términos de sesgo y precisión que los tradicionales)

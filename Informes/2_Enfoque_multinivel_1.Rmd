@@ -1,0 +1,279 @@
+SELECCIÓN DEL MODELO
+========================================================
+```{r carga, echo=FALSE}
+load("../data/share_def4.RData")
+```
+```{r librerias, echo=FALSE, message=FALSE,warning=FALSE}
+library(ggplot2)
+library(lme4)
+library(scales)
+```
+```{r echo=FALSE}
+edad.poly <- poly(share.clean.paises.3.olas$age,2)
+share.clean.paises.3.olas$edad <- edad.poly[,1]
+share.clean.paises.3.olas$edad.cuad <- edad.poly[,2]
+rm(edad.poly)
+```
+
+## PROCESO
+Una vez aceptado el marco de los modelos mixtos (multinivel en nuestro caso), tanto por ser los adecuados para tratar con datos longitudinales o de panel como por presentar cualidades deseables en cuánto a parsimonia del modelo y  sesgo y varianza de las *estimaciones* pasamos a evaluar qué estructura de efectos fijos.
+
+La estrategia a seguir será la de comparación de modelos que tengan la misma estructura de efectos aleatorios (individuos anidados dentro de cohortes) y distinta estructura de efectos fijos. La comparación será fundamentalmente a través del AIC 
+
+#### Efecto Edad.
+Recordemos que el modelo de partida es el que sólo tiene los efectos aleatorios
+```{r glmer1, cache=TRUE}
+
+fit.glmer.1 <- glmer( participacion ~  (1 | dn003_cat/mergeid) ,
+									nAGQ=0,
+										family=binomial, data=share.clean.paises.3.olas)
+```
+
+Ajustamos ahora el modelo añadiendo la edad en la parte de efectos fijos. Se ha recodificado age en edad y edad.cuad mediante polinomios ortogonales para minimizar la colinealidad entre age y age^2. Referencias:
+* [Applied Regression Analysis and Other Multivariable Methods](http://books.google.es/books?id=v590AgAAQBAJ&pg=PA413&lpg=PA413&dq=%22Orthogonal+Polynomials%22+for+avoid+collinearity&source=bl&ots=klDx8RYcb5&sig=wzovwM_o7xqtctPYcha8QJxLBx4&hl=es&sa=X&ei=W6ZsU9XqMYyz0QX3tYDICg&ved=0CEMQ6AEwAQ#v=onepage&q=%22Orthogonal%20Polynomials%22%20for%20avoid%20collinearity&f=false)
+* [Minimizing the Effects of Collinearity in Polynomial Regression](http://pubs.acs.org/doi/abs/10.1021/ie970236k)
+
+En R existe la función `poly` para estos menesteres.
+```{r eval=FALSE}
+edad.poly <- poly(share.clean.paises.3.olas$age,2)
+share.clean.paises.3.olas$edad <- edad.poly[,1]
+share.clean.paises.3.olas$edad.cuad <- edad.poly[,2]
+
+```
+
+```{r cache=TRUE}
+fit.glmer.2 <- glmer(participacion ~ edad + (1 | dn003_cat/mergeid), data = share.clean.paises.3.olas, 
+    family = binomial, nAGQ = 0)
+```
+AIC
+```{r}
+AIC(fit.glmer.1, fit.glmer.2)
+
+```
+Anova
+```{r}
+anova(fit.glmer.1,fit.glmer.2)
+
+```
+El efecto de la edad es significativo tanto por el AIC y el BIC, como por el contraste de razón de verosimilitudes (LRT)
+
+
+#### Efecto cuadrático de la edad
+
+```{r cache=TRUE}
+# utilizamos la función update
+fit.glmer.3 <- update(fit.glmer.2, .~.+edad.cuad)
+```
+
+AIC
+```{r}
+AIC(fit.glmer.1,fit.glmer.2,fit.glmer.3)
+
+```
+Anova
+
+```{r}
+anova(fit.glmer.1, fit.glmer.2, fit.glmer.3)
+
+```
+
+Hay un efecto  cuadrático de la edad significativo, tanto por AIC y BIC como por el LRT (likelihood ratio test)
+
+
+#### Evaluación del modelo con edad y edad.cuad
+
+##### Train/test strategy
+
+Seguiremos estrategia de train/test dónde ajustaremos el modelo sobre una porción de los datos 60% y evaluaremos su ajuste en el 40% restante. 
+
+Para eso utilizaremos la tasa de clasificaciones incorrectas y el análisis de curvas ROC. En ese análisis comparemos también el modelo con edad con el modelo con la edad al cuadrado
+
+Creamos muestras de entrenamiento (60% de los datos ) y de test (40%)
+```{r}
+filas <- nrow(share.clean.paises.3.olas)
+# seleccionamos aleatoriamente el 60% de las filas
+id.train <- sample(filas,filas*0.6)
+# creamos data.frame de train
+train <- share.clean.paises.3.olas[id.train,]
+# creamos data.frame test con los datos no seleccionados en train
+test <- share.clean.paises.3.olas[-id.train,]
+nrow(train)
+nrow(test)
+```
+
+Ajustamos de nuevo los modelos con edad y edad al cuadrado en el conjunto de train
+
+```{r glmer_para_roc, cache=FALSE}
+fit.glmer.2 <- glmer(participacion ~ edad + (1 | dn003_cat/mergeid), data = train, family = binomial, nAGQ = 0)
+fit.glmer.3 <- glmer(participacion ~ edad + edad.cuad + (1 | dn003_cat/mergeid), data = train, family = binomial, nAGQ = 0)
+```
+
+Predecimos sobre el conjunto de test
+
+```{r warning=FALSE}
+test$pred.2 <- predict(fit.glmer.2,test,type="response",allow.new.levels=TRUE)
+test$pred.3 <- predict(fit.glmer.3,test,type="response",allow.new.levels=TRUE)
+```
+**CURVAS ROC**
+El análisis de curvas ROC, bla bla bla, descripción, etc
+
+
+```{r roc.curves,fig.width=14}
+library(ROCR)
+# para el cálculo sólo nos quedamos con los casos donde no hay perdidos en participacion
+
+par(mfrow=(c(1,2)))
+pred.roc.2 <-  prediction(test$pred.2[!is.na(test$participacion)],test$participacion[!is.na(test$participacion)]) 
+
+perf <- performance(pred.roc.2, "tpr", "fpr")
+plot(perf,col = "orange",lty=1,lwd=2, main="Reg logística multinivel\ncon edad")
+lines(c(0,1),c(0,1))
+
+
+pred.roc.3 <-  prediction(test$pred.3[!is.na(test$participacion)],test$participacion[!is.na(test$participacion)]) 
+
+perf <- performance(pred.roc.3, "tpr", "fpr")
+plot(perf,col = "darkred",lty=1,lwd=2,main="Reg logística multinivel\ncon edad y edad al cuadrado")
+lines(c(0,1),c(0,1))
+```
+**Área bajo la curva ROC**
+
+```{r}
+AUC2 <- performance(pred.roc.2,"auc")
+AUC3 <- performance(pred.roc.3,"auc")
+AUC2@y.values
+AUC3@y.values
+```
+Y ambos modelos tienen igual *performance*
+
+
+## Coeficientes del modelo
+
+Un resumen estándar del modelo sería
+
+```{r}
+summary(fit.glmer.3)
+
+```
+Dónde vemos que hay 5 parámetros (2 varianzas y 3 coeficientes)
+
+Podemos ver también como varían los coeficientes fijos estimados en cada categoría de los efectos aleatorios. Por ejemplo en las cohortes
+
+```{r}
+coef(fit.glmer.3)$dn003_cat
+
+```
+
+Lo que implica que la estimación del  logit de la probabilidad de participación en cada cohorte varía sólo en el intercept. 
+
+$$P[y_{i}=1]= \text{logit}^{-1} (\alpha_{1}\,{cohorte_j} + 54.424\cdot edad - 33.44 \cdot edad^2 )$$
+
+Recordemos que edad y edad.cuad son transformaciones mediante polinomios ortogonales de la variable *age* 
+
+Por ejemplo, para *age* de 38.5 corresponde una *edad* de -0.00905 y una *edad.cuad* de 0.02096. 
+```{r echo=FALSE}
+share.clean.paises.3.olas[share.clean.paises.3.olas$age<=39,c("age","edad","edad.cuad")]
+```
+Es sobre las variables edad y edad.cuad sobre las que se estima la ecuación de regresión logística.
+
+En términos de probabilidad podemos hacer el gráfico de las distintas curvas de regresión logística en cada cohorte.
+(También tenemos el efecto en cada individuo pero ese es el modelo a otro nivel)
+
+```{r, echo=FALSE,warning=FALSE, error=FALSE, message=FALSE}
+library(arm)
+library(RColorBrewer)
+colores <- brewer.pal(11,"Paired")
+share.clean.paises.3.olas <- share.clean.paises.3.olas[!is.na(share.clean.paises.3.olas$dn003_cat),]
+ficticio <- share.clean.paises.3.olas[,c("dn003_cat","age","edad","edad.cuad")]
+
+```
+
+
+```{r,fig.width=10, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+tmp1 <- ficticio[,c("dn003_cat","age","edad","edad.cuad")]
+tmp2 <- unique(tmp1[,c("age","edad","edad.cuad")])
+tmp3 <- rbind(tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2)
+tmp3$dn003_cat <- factor (rep(levels(ficticio$dn003_cat),each=607),levels=levels(ficticio$dn003_cat))
+rm(tmp1,tmp2)
+
+pred <- matrix(nrow=nrow(tmp3),ncol=9)
+for (i in 1:9){
+  pred[,i] <- invlogit(coef(fit.glmer.3)$dn003_cat[i,1]+ coef(fit.glmer.3)$dn003_cat[i,2]*tmp3$edad + coef(fit.glmer.3)$dn003_cat[i,3]*tmp3$edad.cuad)
+}
+
+pred.general <- invlogit(fixef(fit.glmer.3)[1]+fixef(fit.glmer.3)[2]*tmp3$edad + fixef(fit.glmer.3)[3]*tmp3$edad.cuad)
+tmp3 <- cbind(tmp3,pred,pred.general)
+colnames(tmp3)[5:13] <- paste0("pred",1:9)
+
+library(reshape)
+
+tmp4 <- tmp3[,c("dn003_cat","age",paste0("pred",1:9),"pred.general")]
+tmp.melt <- melt(tmp4,id=c("dn003_cat","age"))
+
+
+tmp.melt$size <-"pred.cohor"
+tmp.melt$size[tmp.melt$variable=="pred.general"] <- "pred.global" 
+
+p1 <- ggplot(tmp.melt,aes(age,value))
+p1 + geom_line(aes(group=variable, color = variable, size=size)) + 
+# 	scale_size(range=c(0.6,2),guide = FALSE) +
+	# otra forma d
+	scale_size_manual(values=c(0.6,2),guide = FALSE) +
+	scale_y_continuous(limits=c(0,0.8)) +
+ 
+# 	scale_color_discrete()
+ 	labs(colour= "Estimación según cohorte",y="probability")
+
+
+```
+Evidentemente en el estudio no hay datos de individuos de una generación en todas las edades, sino sólo de aquellas que tenía en las 3 olas consideradas.
+Teniendo esto en cuenta, del gráfico anterior nos quedamos con las curvas estimadas para cada cohorte pero sólo en el tramo de edad posibles para cada cohorte según los años en que se ha realizado el estudio.
+```{r echo=FALSE,fig.width=10, warning=FALSE, error=FALSE, message=FALSE }
+tmp.melt[ (tmp.melt$variable!="pred1" & as.numeric(tmp.melt$dn003_cat)==1) |
+          (tmp.melt$variable=="pred1" & tmp.melt$age<80),"value"] <- NA
+
+tmp.melt[(tmp.melt$variable!="pred2" &  as.numeric(tmp.melt$dn003_cat)==2) | 
+				 (tmp.melt$variable=="pred2" & tmp.melt$age<70),"value"] <- NA
+
+tmp.melt[(tmp.melt$variable!="pred3" & as.numeric(tmp.melt$dn003_cat)==3) |
+				(tmp.melt$variable=="pred3" & (tmp.melt$age<65 | tmp.melt$age>85 )),"value"] <- NA
+tmp.melt[(tmp.melt$variable!="pred4" & as.numeric(tmp.melt$dn003_cat)==4 ) |
+			  (tmp.melt$variable=="pred4" &(tmp.melt$age<60 | tmp.melt$age>80)  ),"value"] <- NA
+tmp.melt[(tmp.melt$variable!="pred5" & as.numeric(tmp.melt$dn003_cat)==5 ) |
+				(tmp.melt$variable=="pred5" & (tmp.melt$age<55 | tmp.melt$age>75)),"value"] <- NA
+tmp.melt[(tmp.melt$variable!="pred6" &  as.numeric(tmp.melt$dn003_cat)==6) |
+				(tmp.melt$variable=="pred6" & (tmp.melt$age<50 | tmp.melt$age>70)),"value"] <- NA
+
+tmp.melt[(tmp.melt$variable!="pred7" &  as.numeric(tmp.melt$dn003_cat)==7) |
+				(tmp.melt$variable=="pred7" & (tmp.melt$age<45 | tmp.melt$age>65)),"value"] <- NA
+
+tmp.melt[ (tmp.melt$variable!="pred8" &  as.numeric(tmp.melt$dn003_cat)==8) |
+				(tmp.melt$variable=="pred8" & (tmp.melt$age<40 | tmp.melt$age>60)),"value"] <- NA
+
+tmp.melt[( tmp.melt$variable!="pred9" & as.numeric(tmp.melt$dn003_cat)==9 ) |
+				(tmp.melt$variable=="pred9" & (tmp.melt$age<35 | tmp.melt$age>55)),"value"] <- NA
+
+
+tmp.melt <- tmp.melt[!is.na(tmp.melt$value),]
+tmp.melt <- tmp.melt[tmp.melt$variable!="pred.general",]
+tmp.melt$variable <- droplevels(tmp.melt$variable)
+p1 <- ggplot(tmp.melt,aes(age,value))
+p1 + geom_line(aes( color = dn003_cat, size=size)) + 
+# 	scale_size(range=c(0.6,2),guide = FALSE) +
+	# otra forma d
+	scale_size_manual(values=c(0.6,2),guide = FALSE) +
+	scale_y_continuous(limits=c(0,0.8)) +
+ 
+# 	scale_color_discrete()
+ 	labs(colour= "Estimación según cohorte",y="probability")
+
+```
+
+El siguiente paso es ir añadiendo otras covariables, *ola del estudio*, *ocupación*, *salud autopercibida*, *años de educación*, *cognitive* y otras variables. Ahí es dónde tienes que **indicarme**. Tengo algo hecho, pero no en plan sistemático, tengo que hablar contigo para ver las variables que teóricamente puedan influir en la participación y cuáles serán nuestras hipótesis. 
+
+Bueno, **¿qué opinas, podríamos tener paper o no?**
+
+Una vez tengamos todo eso, tengo pendiente hacer pruebas con el subconjunto de datos de las personas que estén en las 3 olas y comprobar los modelos multinivel con los normales utilizando pesos longitudinales ( los pesos longitudinales sólo están disponibles para las personas que estén en las 3 olas)
+
+
+

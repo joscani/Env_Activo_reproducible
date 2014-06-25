@@ -1,0 +1,152 @@
+SELECCIÓN DEL MODELO II
+========================================================
+```{r carga, echo=FALSE}
+load("../data/share_def4.RData")
+```
+```{r librerias, echo=FALSE, message=FALSE,warning=FALSE}
+library(ggplot2)
+library(lme4)
+library(scales)
+```
+```{r echo=FALSE}
+edad.poly <- poly(share.clean.paises.3.olas$age,2)
+share.clean.paises.3.olas$edad <- edad.poly[,1]
+share.clean.paises.3.olas$edad.cuad <- edad.poly[,2]
+```
+```{r echo=FALSE}
+rm(edad.poly)
+```
+
+Partiendo del modelo con los efectos aleatorios de personas *mergeid* y cohorte *dn003_cat* y los efectos fijos de edad y edad al cuadrado, vamos a investigar otras variables que podrían influir en la participación.
+
+```{r}
+fit.glmer.3 <- glmer(participacion ~ edad + edad.cuad + (1 | dn003_cat/mergeid), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+
+```
+
+
+## Otras covariables
+Nuestro interés principal era aislar el efecto de la cohorte y de la edad pero puede haber otras variables importantes que influyan en la participación. Nos vamos a centrar en 4.
+* id_ola: Variable que identifica la ola del estudio, sus valores son 1,2,4
+* cognitive: Tengo que ver de dónde viene, pero es construida a partir de otras.
+* sphus: Salud autopercibida por el entrevistado: excellent, very good, good, fair, poor.
+* eduyears_mo: Años de educación
+* country: país del encuestado
+
+
+Para ver si hay interacciones entre algunas de las variables ajuste un modelo que contenga todas las interacciones de orden 2 entre cognitive, eduyears_mod , sphus ,country y luego mediante contrastes LRT veo cuáles son significativos
+```{r}
+
+fit.glmer.full <- glmer(participacion ~ edad + edad.cuad +
+                         id_ola + (cognitive + eduyears_mod + sphus + country)^2+
+ (1 | dn003_cat/mergeid), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+
+
+```
+
+```{r eval = FALSE, echo = FALSE}
+library(MuMIn)
+# evalua demasiados modelos
+
+mod.dre <- dredge(fit.glmer.full, fixed= c("edad","edad.cuad","id_ola","country"), trace = TRUE)
+get.models(mod.dre,1)
+round(importance(mod.dre),5)
+plot(importance(mod.dre), type="b", axes = FALSE, pch = 19,xlab="",ylab="Importancia")
+axis(2, las = 2)
+axis(1, at = 1:13, labels = names(importance(mod.dre)), las = 2, cex.axis = 0.7)
+```
+
+En vez de evaluar todos los modelos(que tarda bastante) hacemos contrastes de Razón de verosimilitud entre modelos anidados (LRT:Likelihood Ratio Test)
+```{r}
+library(car)
+Anova(fit.glmer.full)
+# quito eduyears_mod:sphus
+fit <- update(fit.glmer.full, ~. -eduyears_mod:sphus )
+Anova(fit)
+
+# quito cognitive:sphus
+fit <- update(fit, ~. -cognitive:sphus  )
+Anova(fit)
+
+# quito cognitive:eduyears_mod
+fit <- update(fit, ~. -cognitive:eduyears_mod  )
+Anova(fit)
+
+
+
+```
+De dónde nos quedamos con un modelo con los efectos de edad y edad.cuad (nótese que si incluimos la edad.cuad tenemos que incluir la edad aunque no sea significativa), el efecto principal de la ola, cognitive, eduyears_mod,sphus y country. Y también la interacción entre country y cognitive, country y eduyears_mod y country y sphus.
+
+Otra forma de tratar el país es considerarlo como un 4 nivel dentro del modelo, de forma que tendríamos individuos anidados dentro de cohortes y estas dentro de países y contrastar si al efecto aleatorio del país se modifica por cognitive, eduyears y sphus. 
+
+Pero las cohortes no están anidadas en países, por tanto sería cruzado. Los individuos si están completamente anidados en país/cohorte/individuos. 
+
+```{r}
+fit2 <- glmer(participacion ~ edad + edad.cuad + id_ola + cognitive + 
+    eduyears_mod + sphus + (1 | mergeid:(dn003_cat:country)) + (1 |dn003_cat) + (1|country), 
+    data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+```
+
+
+
+
+Vemos si es significativo añadir eduyears_mod a nivel de cohorte, ya que pensamos que los años de educación puede ser tanto una variable individual como que dependa en cierta forma de la cohorte a la que se pertenece. 
+
+```{r cohorte_con_eduyears_mod, cache=TRUE}
+fit2.1 <- glmer(participacion ~ edad + edad.cuad + id_ola + cognitive + 
+    eduyears_mod + sphus + (1 | mergeid:(dn003_cat:country)) + (eduyears_mod |dn003_cat) + (1|country), 
+    data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+anova(fit2,fit2.1)
+```
+Es mejor modelo según el LRT y el AIC pero no según el BIC, en general, me decantaría por no 
+usarlo
+
+Veo si eduyears_mod puede ser un predictor a nivel de país.
+```{r, cache=TRUE }
+fit2.2 <- glmer(participacion ~ edad + edad.cuad + id_ola + cognitive + 
+    eduyears_mod + sphus + (1 | mergeid:(dn003_cat:country)) + (eduyears_mod |dn003_cat) + ( eduyears_mod |country), 
+    data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+anova(fit2,fit2.1,fit2.2)
+
+```
+
+Al tener tantos datos, muchos efectos salen significativos, sin llegar a ser importantes. Podemos comparar los modelos utilizando el criterio AIC o BIC que penalizan los modelos con más parámetros.
+
+```{r}
+AIC(fit.glmer.3,fit.glmer.full,fit,fit2,fit2.1,fit2.2)
+BIC(fit.glmer.3,fit.glmer.full,fit,fit2,fit2.1,fit2.2)
+
+```
+
+Por simplicidad parece que el modelo fit2.2 es adecuado. En este modelo se incluye como predictor de la media de participación por país y por cohortes,los años de educación. Siendo por tanto esta variable un predictor a nivel individual,a nivel de cohorte y  a nivel de país.
+
+En el modelo tenemos predictores a nivel de observaciones de un individuo, como la edad, la edad.cuad id_ola, y eduyears_mod y cognitive, ya que estas variables pueden cambiar para cada individuo en cada ola, y también tenemos que el intercept varía por individuo (anidado dentro de país y cohorte) y también tenemos intercept variable por cohorte (dentro de país) y por país 
+
+### Resumen fit2.2
+
+```{r}
+summary(fit2.2)
+```
+
+#### Efectos fijos
+
+Este sería el efecto general 
+
+```{r}
+fixef(fit2.2)
+
+```
+
+Para los individuos de un país sería
+
+```{r}
+coef(fit2.2)$country
+
+```
+Y se observa 
+
+
+
+
+
+_

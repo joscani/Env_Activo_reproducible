@@ -1,0 +1,64 @@
+SELECCIÓN DEL MODELO II
+========================================================
+```{r carga, echo=FALSE,}
+load("../data/share_def4.RData")
+```
+```{r librerias, echo=FALSE, message=FALSE,warning=FALSE}
+library(ggplot2)
+library(lme4)
+library(scales)
+```
+```{r echo=FALSE}
+edad.poly <- poly(share.clean.paises.3.olas$age,2)
+share.clean.paises.3.olas$edad <- edad.poly[,1]
+share.clean.paises.3.olas$edad.cuad <- edad.poly[,2]
+```
+```{r echo=FALSE}
+rm(edad.poly)
+```
+
+```{r nuevo, cache=TRUE}
+
+fit.glmer <- glmer(participacion ~ edad + edad.cuad +
+                id_ola + cognitive + eduyears_mod + sphus + country +
+ (1 | dn003_cat/mergeid), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+
+
+```
+
+
+
+
+```{r}
+library(car)
+Anova(fit.glmer)
+
+
+```
+ 
+
+```{r}
+print(fit.glmer,corr=FALSE)
+```
+```{r}
+coef(summary(fit.glmer))
+```
+
+
+
+```{r, eval=FALSE, echo=FALSE,results='asis'}
+library(stargazer)
+stargazer(fit.glmer,type="html")
+```
+
+
+```{r}
+fit2 <- glmer(participacion ~ edad + edad.cuad +
+                id_ola + cognitive + eduyears_mod + sphus  +
+ (1 | dn003_cat/mergeid) + (1|country), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+```
+
+```{r}
+ranef(fit2)$country
+```
+

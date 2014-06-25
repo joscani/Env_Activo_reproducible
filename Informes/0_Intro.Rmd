@@ -1,0 +1,152 @@
+---
+output:
+  html_document:
+    highlight: textmate
+  pdf_document: default
+---
+Efecto de la edad y cohorte sobre la participación en actividades relacionadas con la salud. Encuesta SHARE 
+=================================================================
+Descripción de share. "lorem ipsum blablabla"
+
+Variable dependiente: Participación que indica si se ha participado al menos en alguna de las siguientes actividades.
+
+
+
+
+La variable participacion toma los valores 0 y 1.
+Algunos descriptivos
+
+```{r echo=FALSE}
+
+load("../data/share_def4.RData")
+
+```
+
+## Efecto edad sobre participación
+
+Veamos las tablas de edad (en grupos de edad) y participación
+
+```{r echo=FALSE}
+
+with(share.clean.paises.3.olas,xtabs(~participacion +age_cat))
+
+prop.table(with(share.clean.paises.3.olas,xtabs(~participacion +age_cat)),2)
+
+```
+
+Gráficamente
+
+```{r echo=FALSE}
+library(ggplot2)
+library(scales)
+library(RColorBrewer)
+colores <- brewer.pal(7,"Set1")
+tmp <- as.data.frame (with(share.clean.paises.3.olas,prop.table (table(age_cat,participacion),1)))
+
+p <- ggplot(tmp[tmp$participacion=="partic",], aes(x=age_cat,y=Freq))
+ p + geom_point(stat="identity",col = colores[2],size=rel(3)) + xlab("Grupos  de edad") + ylab("% Participación") +
+	scale_y_continuous(labels = percent) + ggtitle("Participación por \ngrupos de edad")
+```
+La participacion disminuye conforme aumenta la edad y esta disminución tiene un ritmo mayor a partir de los 70 años. Esto es compatible con un efecto cuadrático de la edad.
+
+Para comprobarlo podemos calcular la proporción de participación en cada nivel de edad, y lo hacemos para cada ola. Esto se puede hacer calculándolo directamente.
+
+```{r}
+# lo hacemos con la edad categorizada para que no salga una tabla muy grande
+with(share.clean.paises.3.olas,tapply(participacion, list(age_cat,id_ola),function(x)mean(x=="partic",na.rm=TRUE)))
+```
+
+**Lo que viene a continuación es sólo aclaratorio, y lo único que dice es que los modelos de regresión (lineales y logísticos) con predictores categóricos se pueden usar para calcular medias. A veces es mejor hacerlo así, ya que aparte de las medias nos dan también significación estadística y contrastes de diferencias de medias**
+
+Una forma equivalente de calcular la proporción de participación en cada categoría de edad y ola es considerar un modelo de regresión logística donde añadimos la interacción entre age_cat e id_ola
+
+```{r}
+mod1 <- glm(participacion ~ age_cat * id_ola,family=binomial,data=share.clean.paises.3.olas)
+# y ahora 
+share.clean.paises.3.olas$pred <- predict(mod1,newdata=share.clean.paises.3.olas,type="response")
+
+with(share.clean.paises.3.olas,tapply(pred,list(age_cat,id_ola),mean))
+
+```
+Es decir, un modelo de regresión logística dónde consideramos las interacciones nos da una manera equivalente de calcular las medias de las proporciones, pero con la ventaja de que podemos ver la significativad.
+
+**Hasta aquí la aclaración**
+
+
+### Gráficos de participación por edad y ola
+```{r, echo=FALSE,fig.width=10,fig.height=8}
+# Efecto edad 
+
+suppressPackageStartupMessages( library(gridExtra) )
+tabla2 <-  aggregate( participacion == "partic" ~ age_cat  + id_ola ,mean,data=share.clean.paises.3.olas)
+colnames(tabla2)[3] <- "participacion"
+
+p1 <- ggplot(tabla2 ,aes(x=age_cat,y=participacion))
+p1 +geom_point(stat="identity",col = colores[2],size=rel(3)) +  	scale_y_continuous(labels = percent) +
+	facet_wrap(~id_ola,ncol=2) + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + labs(list(x="Grupos de edad",y="% de participación")) + ggtitle("Participación por \ngrupos de edad y Ola")
+
+
+```
+
+## Efecto cohortes 
+Podemos hacer un gráfico similar para las cohortes. Las cohortes consideradas son las siguientes.
+```{r}
+table(share.clean.paises.3.olas$dn003_cat)
+
+```
+La tabla cruzada con edad es.
+
+```{r}
+with(share.clean.paises.3.olas,table(age_cat,dn003_cat))
+
+```
+
+### Gráficos de participación por cohortes y ola
+
+```{r echo=FALSE, fig.width=10,fig.height=8}
+# Efecto cohorte
+
+tabla3 <- aggregate( participacion == "partic" ~ dn003_cat  + id_ola ,mean,data=share.clean.paises.3.olas)
+colnames(tabla3)[3] <- "participacion"
+
+p1 <- ggplot(tabla3,aes(x=dn003_cat, y = participacion))
+p1 +geom_point(stat="identity",col = colores[2],size=rel(3)) +  	scale_y_continuous(labels = percent) + 
+	scale_x_discrete(limits =rev(levels(tabla3$dn003_cat) ))+
+	facet_wrap(~id_ola,ncol=2) + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + labs(list(x="Cohortes",y="% de participación")) + ggtitle("Participación por \nCohortes y Ola")
+
+	
+
+
+```
+
+## Efecto de la edad y cohorte en cada ola
+
+
+### Gráficos de participación por edad, cohorte y ola
+```{r echo=FALSE, fig.width=10, fig.height=8}
+tabla4 <- aggregate( participacion == "partic" ~ age_cat + dn003_cat + id_ola ,mean,data=share.clean.paises.3.olas)
+colnames(tabla4)[4] <- "participacion"
+
+p4 <-  ggplot(tabla4,aes(x=age_cat,y=participacion,color=dn003_cat))
+p4 + geom_point(size=rel(4)) +  	scale_y_continuous(labels = percent) +
+	facet_wrap(~id_ola,ncol=2) + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + labs(list(x="Grupos de edad",y="% de participación",
+            color="Cohortes")) 
+
+
+```
+
+Viendo el gráfico de líneas al unir los puntos
+
+```{r echo=FALSE, fig.width=10}
+p5 <-  ggplot(tabla4,aes(x=age_cat,y=participacion,color=dn003_cat,group=id_ola))
+p5 + geom_line(size=rel(1.7)) +  	scale_y_continuous(labels = percent) +
+	facet_wrap(~id_ola,ncol=2) + theme(axis.text.x = element_text(angle=90, hjust=1, vjust=.5)) + labs(list(x="Grupos de edad",y="% de participación",
+            color="Cohortes")) 
+
+```
+
+
+
+
+
+
