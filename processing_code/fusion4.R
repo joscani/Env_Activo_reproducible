@@ -8,9 +8,6 @@
 
 library(foreign)
 
-# sigo esquema del documento, mas tarde agruparé como en 3_2.R
-# variables actividad vida diaria
-
 # adl: En fichero (physical healt) de variables  generadas
 
 ## Módulo AC 
