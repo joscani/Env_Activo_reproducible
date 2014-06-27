@@ -88,4 +88,8 @@ share.clean.paises.3.olas <- share.clean.paises.3.olas[as.numeric(share.clean.pa
 share.clean.paises.3.olas$age_cat <- droplevels(share.clean.paises.3.olas$age_cat)
 levels(share.clean.paises.3.olas$age_cat2)[1] <- "(50,55]"
 levels(share.clean.paises.3.olas$id_ola) <- c("Ola 1", "Ola 2", "Ola 4")
+
+hyears <- read.csv2("../an_longitudinal/data/paises_olas.csv", dec=",")
+
+share.clean.paises.3.olas <- merge(share.clean.paises.3.olas, hyears, by=c("id_ola","country"))
 save(share.clean.paises.3.olas,file="tempData/share_def4.RData")
