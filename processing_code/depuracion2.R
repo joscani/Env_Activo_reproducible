@@ -91,5 +91,5 @@ levels(share.clean.paises.3.olas$id_ola) <- c("Ola 1", "Ola 2", "Ola 4")
 
 hyears <- read.csv2("../an_longitudinal/data/paises_olas.csv", dec=",")
 
-share.clean.paises.3.olas <- merge(share.clean.paises.3.olas, hyears, by=c("id_ola","country"))
+share.clean.paises.3.olas <- merge(share.clean.paises.3.olas, hyears, by=c("id_ola","country","gender"))
 save(share.clean.paises.3.olas,file="tempData/share_def4.RData")
