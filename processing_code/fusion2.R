@@ -18,7 +18,7 @@ library(foreign)
 # adl: En fichero (physical healt) de variables  generadas
 
 ## Módulo AC 
-ac <- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ac.dta")
+ac <- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ac.dta")
 names(ac)
 sel.id <- c("mergeid","hhid","hhid1","country","waveid")
 sel1 <- paste0("ac002d",1:7)
@@ -57,7 +57,7 @@ ac.new$ac004d8_7 <- NA
 
 
 ## Módulo IV
-iv <- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_iv.dta")
+iv <- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_iv.dta")
 posicion <- names(iv) %in% c("mergeid","iv020_")
 iv.new <- iv[,posicion]
 names(iv.new)
@@ -70,7 +70,7 @@ unido1 <- merge(ac.new,iv.new,by="mergeid")
 
 ## Módulo DN
 
-dn <- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_dn.dta")
+dn <- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_dn.dta")
 
 posicion <- names(dn) %in% c("mergeid","dn003_","dn010_","dn014_","dn042_")
 dn.new <- dn[,posicion]
@@ -90,7 +90,7 @@ names(unido2) [names(unido2)  %in% "dn042_"] <- "gender"
 
 ## Módulo PH
 
-ph <- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ph.dta")
+ph <- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ph.dta")
 
 sel4 <- paste0("ph006d",c(1,4,5,6,10,12,14))
 posicion <- names(ph) %in% c("mergeid",sel4)
@@ -107,7 +107,7 @@ rm(unido2)
 
 ## variables generadas gen_ph
 
-gen_ph <- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_generated_variables_modules/sharew2_rel2-6-0_gv_health.dta")
+gen_ph <- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_generated_variables_modules/sharew2_rel2-6-0_gv_health.dta")
 
 posicion <- names(gen_ph) %in% c("mergeid","adl", "iadl","numeracy","eurod")
 gen_ph.new <- gen_ph[,posicion]
@@ -123,7 +123,7 @@ rm(unido3)
 
 # Módulo CF
 
-cf<- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_cf.dta")
+cf<- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_cf.dta")
 
 posicion <- names(cf) %in% c("mergeid","cf003_","cf004_","cf005_","cf006_",
                            "cf008tot","cf012_","cf013_","cf014_","cf015_",
@@ -140,7 +140,7 @@ rm(unido4)
 
 # Módulo MH
 
-mh<- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_mh.dta")
+mh<- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_mh.dta")
 
 posicion <- names(mh) %in% c("mergeid",paste0(paste0("mh00",2:9),"_"),
                            paste0(paste0("mh0",10:17),"_"))
@@ -154,7 +154,7 @@ rm(unido5)
 
 # Módulo EP
 
-ep<- read.dta("../an_longitudinal/data/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ep.dta")
+ep<- read.dta("rawdata/wave2/stata_sharew2_rel2-6-0__all_capi_modules/sharew2_rel2-6-0_ep.dta")
 
 posicion <- names(ep) %in% c("mergeid", "ep005_")
 ep.new <- ep[,posicion]

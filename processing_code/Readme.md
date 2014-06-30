@@ -179,7 +179,7 @@ Parte de share_def3.RData
 * Eliminamos los casos correspondientes a la cohorte más joven (1965,2013]
 * Elminamos aquellos casos con edad < 50 
 
-* Se añaden datos de female healthy life al nacer para cada país según ola y país
+* Se añaden datos de life y healthy expectancy at 50 por país, ola y sexo
 
 * Guardamos los datos en share_def4.RData
 

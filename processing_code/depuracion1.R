@@ -5,7 +5,7 @@
 
 load("tempData/share_def2.RData")
 
-load("../an_longitudinal/data/easyshare.RData")
+load("tempData/easyshare.RData")
 
 ###################################
 # Cargo easyshare con las variables que quiero unir

@@ -1,7 +1,7 @@
 # unir ola4 y easyshare(ola4)
 
 library(foreign)
-load("../an_longitudinal/data/sharew4.RData")
+load("rawdata/sharew4.RData")
 load("tempData/ola4.RData")
 sharew4$gender <- droplevels(sharew4$female)
 
@@ -69,7 +69,7 @@ share.def <- rbind(ola1_2.red,ola4)
 share.def$id_across_wave <- paste(share.def$mergeid,share.def$id_ola,sep="_")
 
 library(foreign)
-share <- read.dta("../an_longitudinal/data/easySHARE_rel1-0-0_stata/easySHARE_rel1-0-0.dta")
+share <- read.dta("rawdata/easySHARE_rel1-0-0_stata/easySHARE_rel1-0-0.dta")
 share$id_across_wave <- paste(share$mergeid,share$wave,sep="_")
 
 # union de share.def y share (que viene de easyShare)
