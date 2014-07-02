@@ -19,7 +19,7 @@ with(share.def, prop.table( table(id_ola, participacion),1))
 ## Corregimos participación de la ola4 
 # cargamos datos originales de ac
 library(foreign)
-ac_w4 <- read.dta(file="../an_longitudinal/data/wave4//stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_ac.dta")
+ac_w4 <- read.dta(file="rawdata/wave4/stata_sharew4_rel1-1-1_all_capi_modules/sharew4_rel1-1-1_ac.dta")
 names(ac_w4)
 # creamos variable id_across_wave para poder unir
 ac_w4$id_across_wave <- paste(ac_w4$mergeid,4,sep="_")
