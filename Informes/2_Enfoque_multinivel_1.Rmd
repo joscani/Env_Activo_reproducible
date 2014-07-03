@@ -170,9 +170,9 @@ $$P[y_{i}=1]= \text{logit}^{-1} (\alpha_{1}\,{cohorte_j} + 54.424\cdot edad - 33
 
 Recordemos que edad y edad.cuad son transformaciones mediante polinomios ortogonales de la variable *age* 
 
-Por ejemplo, para *age* de 38.5 corresponde una *edad* de -0.00905 y una *edad.cuad* de 0.02096. 
+Por ejemplo, para *age* de 52 corresponde una *edad* de -0.0048 y una *edad.cuad* de 0.0049. 
 ```{r echo=FALSE}
-share.clean.paises.3.olas[share.clean.paises.3.olas$age<=39,c("age","edad","edad.cuad")]
+head(share.clean.paises.3.olas[share.clean.paises.3.olas$age==52,c("age","edad","edad.cuad")],1)
 ```
 Es sobre las variables edad y edad.cuad sobre las que se estima la ecuación de regresión logística.
 
@@ -191,10 +191,18 @@ ficticio <- share.clean.paises.3.olas[,c("dn003_cat","age","edad","edad.cuad")]
 
 ```{r,fig.width=10, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
 tmp1 <- ficticio[,c("dn003_cat","age","edad","edad.cuad")]
+
 tmp2 <- unique(tmp1[,c("age","edad","edad.cuad")])
 tmp3 <- rbind(tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2,tmp2)
-tmp3$dn003_cat <- factor (rep(levels(ficticio$dn003_cat),each=607),levels=levels(ficticio$dn003_cat))
+tmp3$dn003_cat <- factor (rep(levels(ficticio$dn003_cat),each=498),levels=levels(ficticio$dn003_cat))
 rm(tmp1,tmp2)
+
+
+# tmp3$pred <- invlogit(coef(fit.glmer.3)$dn003_cat[as.numeric(tmp3$dn003_cat),1]+
+# 					  	coef(fit.glmer.3)$dn003_cat[,2]*tmp3$edad +
+# 					  	coef(fit.glmer.3)$dn003_cat[,3]*tmp3$edad.cuad)
+
+
 
 pred <- matrix(nrow=nrow(tmp3),ncol=9)
 for (i in 1:9){
@@ -204,6 +212,8 @@ for (i in 1:9){
 pred.general <- invlogit(fixef(fit.glmer.3)[1]+fixef(fit.glmer.3)[2]*tmp3$edad + fixef(fit.glmer.3)[3]*tmp3$edad.cuad)
 tmp3 <- cbind(tmp3,pred,pred.general)
 colnames(tmp3)[5:13] <- paste0("pred",1:9)
+
+tmp3$pred.general <- invlogit(fixef(fit.glmer.3)[1]+fixef(fit.glmer.3)[2]*tmp3$edad + fixef(fit.glmer.3)[3]*tmp3$edad.cuad)
 
 library(reshape)
 
@@ -228,7 +238,35 @@ p1 + geom_line(aes(group=variable, color = variable, size=size)) +
 ```
 Evidentemente en el estudio no hay datos de individuos de una generación en todas las edades, sino sólo de aquellas que tenía en las 3 olas consideradas.
 Teniendo esto en cuenta, del gráfico anterior nos quedamos con las curvas estimadas para cada cohorte pero sólo en el tramo de edad posibles para cada cohorte según los años en que se ha realizado el estudio.
-```{r echo=FALSE,fig.width=10, warning=FALSE, error=FALSE, message=FALSE }
+
+```{r echo=FALSE, fig.width=10, warning=FALSE, error=FALSE, message=FALSE }
+share.clean.paises.3.olas$pred <- invlogit(coef(fit.glmer.3)$dn003_cat[as.numeric(share.clean.paises.3.olas$dn003_cat),1]+
+					  	coef(fit.glmer.3)$dn003_cat[,2]*share.clean.paises.3.olas$edad +
+					  	coef(fit.glmer.3)$dn003_cat[,3]*share.clean.paises.3.olas$edad.cuad)
+
+muestra <- share.clean.paises.3.olas
+
+muestra <- muestra[,c("dn003_cat","age","pred")]
+
+tmp <- melt(muestra,id.vars=c("dn003_cat","age"))
+tmp <- unique(tmp)
+
+tmp$size <-"pred.cohor"
+
+tmp2 <- unique(tmp)
+p1 <- ggplot(tmp2,aes(age,value))
+p1 + geom_line(aes( color = dn003_cat, size=size)) + 
+	# 	scale_size(range=c(0.6,2),guide = FALSE) +
+	# otra forma d
+	scale_size_manual(values=c(0.6,2),guide = FALSE) +
+	scale_y_continuous(limits=c(0,0.8)) +
+	
+	# 	scale_color_discrete()
+	labs(colour= "Estimación según cohorte",y="probability")
+
+```
+
+```{r eval=FALSE,  echo=FALSE,fig.width=10, warning=FALSE, error=FALSE, message=FALSE }
 tmp.melt[ (tmp.melt$variable!="pred1" & as.numeric(tmp.melt$dn003_cat)==1) |
           (tmp.melt$variable=="pred1" & tmp.melt$age<80),"value"] <- NA
 
