@@ -1,0 +1,6 @@
+base
+ggplot2
+lme4
+Matrix
+Rcpp
+scales

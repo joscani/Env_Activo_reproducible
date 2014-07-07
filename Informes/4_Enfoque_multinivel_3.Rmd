@@ -62,3 +62,32 @@ fit2 <- glmer(participacion ~ edad + edad.cuad +
 ranef(fit2)$country
 ```
 
+
+```{r}
+fit3 <- glmer(participacion ~ edad + edad.cuad +
+                id_ola + cognitive + eduyears_mod + sphus  + le_50+
+ (1 | dn003_cat/mergeid) + (1|country), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+
+Anova(fit3)
+
+```
+```{r}
+library(effects)
+
+efectos <- allEffects(fit3)
+
+
+plot(efectos,rescale.axis=FALSE)
+```
+
+```{r}
+efectocogn <- Effect(c("eduyears_mod","cognitive"),fit3)
+plot(efectocogn, multiline=TRUE)
+
+```
+```{r}
+fit4 <- glmer(participacion ~ edad + edad.cuad +
+                id_ola + cognitive + eduyears_mod + sphus  + le_50+
+ (1 | dn003_cat/mergeid) + (1|country) + (1 | country:dn003_cat), data = share.clean.paises.3.olas, family = binomial, nAGQ = 0)
+```
+
