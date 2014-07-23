@@ -1,0 +1,69 @@
+Tiene lógica seguir un esquema similar al del artículo "Edad, cohortes o 
+período. Desenredando las causas del desinterés político en España"
+
+1. Efecto esperado de la edad sobre la participación, tal y como 
+tenemos definida participación.
+
+En principio uno podría pensar en un efecto lineal, tipo a mayor edad
+menor participación
+
+2. Efecto cuadrático de la edad. 
+Analizando los % de participación por grupo de edad se observa que 
+la relación no es lineal y que podría ser cuadrática.
+
+Aquí se pondría el gráfico de los % de participación por grupos de edad
+
+3. Cohortes. Efecto que se solapa con la edad. 
+La edad se ha considerado la edad en el momento de la encuesta, por lo 
+tnato la edad de una persona va cambiando pero las cohortes no. Se observa
+que las cohortes tienen un efecto muy parecido al de la edad , cohortes
+más mayores participan menos. [aquí gráfico de % participación por cohortes]
+Al considerar las cohortes como efecto aleatorio podemos separar su efecto del 
+de la edad
+
+4. País como efecto aleatorio o fijo
+El país se podría considerar como factor aleatorio o fijo, al ser 10 países
+podemos considerarlo como factor aleatorio y da resultados "no peores" al 
+considerarlo como fijo. De hecho las estimaciones son mejores ya que son
+"partial pooled" "parcialmente compartidas" entre los grupos. 
+ Ver libro de Andrew Gellman y artículo de Lax Philips. También explicación
+ sobre como se estiman las "medias" en modelos mixtos, ya que que sean
+ "partial pooled" se hacen estimaciones ponderadas (por la varianza estimada)
+ la media muestral en cada categoría y eltamaño muestral en cada categoría.
+ 
+5. Como tenemos datos de panel, y algunos individuos son los mismos en las
+diferentes oleadas, hay que tratarlos como factor aleatorio, en este caso
+anidado dentro de cohortes.
+
+Modelos a comparar.
+
+Modelo 0. Modelo nulo dónde tenemos los efectos aleatorios de individuo, la cohorte
+y el país. 
+
+Modelo 1. Añadimos edad y edad al cuadrado. Explicando el uso de los polinomios ortogonales
+
+
+Modelo 2. Añadiendo otras covariables : eduyears_mod, cognitive, numeracy, etc..
+
+
+Conclusiones..
+A nivel de efectos aleatorios, niveles superiores al individual
+
+- A cohorte más antigua menor partipación..
+- Diferencias por países- Mostrar las curvas de como varía la participación
+en cada país según la edad y las cohortes..
+
+A nivel individual  
+-  A mayor edad menor participación pero con efecto no lineal, resultando
+que existe una edad de máxima participación. cuantificación del efecto
+mediante los gráficos
+
+- A mayor cognitive mayor particpación
+- A mayor años de educación mayor participación
+
+
+Número de figuras en documento. 3-5
+
+
+Dudas. 
+Trabajamos con todos los casos o hacemos train / test strategy. 

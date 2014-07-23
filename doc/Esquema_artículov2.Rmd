@@ -1,0 +1,105 @@
+---
+title: "Esquema artículo (para la parte de design and methods)"
+output: html_document
+---
+
+
+## Descripción de Survey of Health, ageing and Retirement in Europe (SHARE)
+
+1. Descripción de la encuesta, de dónde se baja.
+2. Cuál es nuestra muestra de análisis. Aquí tendríamos que decir que utilizamos las olas 1, 2 y 4 porque son las comparables (la ola 3 no ), que nos quedamos sólo con los datos de los países que están en las tres olas y con los individuos con más de 50 años.
+
+Habria que buscar en la página de share las tasas de respuesta. 
+
+
+
+## Medidas de participación
+
+La variable de participación se construye a partir de 5 variables de actividades.
+Las actividades son:
+
+
+Names in our database   | descriptition                                                      | ola1/2  |  ola4 
+:--- | :---------------------------------------------------------- | :---------------: | ------------:
+act1 | Done voluntary or charity work                              | ac002d1           | ac035d1
+act4 | Attended an educational or training course                  | ac002d4           | ac035d4
+act5 | Gone to a sport, social or other kind of club               | ac002d5           | ac035d5
+act6 | Taken part in activities of a religious organization        | ac002d6           | ac035d6
+act7 | Taken part in a political or community-related organization | ac002d7           | ac035d7
+
+Se define la variable participación como 1 (partic) si se ha realizado alguna de estas actividades. Hay que notar que en las olas 1 y 2 se pregunta por la realización de las actividades durante el último mes, mientras que en la ola4 se pregunta por el último año. Con el fin de unificar criterios, en la medida de lo posible, se ha considerado como que si participan a los encuestados en la ola4 que hayan participado frecuentemente en alguna de las actividades.
+
+El criterio adoptado es el de considerar participación frecuente la participación diaria, semanal, mensual o en la mayoría de los meses del año. Si el encuestado contesta que durante el año ha realizado alguna de las actividades pero con menor frecuencia se le clasifica como no partipante.
+
+## Covariables o variables de control
+
+Indicar qué covariables se van a utilizar para modelar la participación.
+
+* edad en el momento de cada ola
+* cohorte de pertenencia: Indicar qué cohortes hemos considerado
+* País
+* Ola
+* Años de educación. 
+
+* cognitive. Esta variable la hemos calculado . Habrá que explicarlo, e indicar la referencia de dónde lo hemos tomado
+
+
+```
+cogn1 <- ifelse(as.numeric(ola1$cf003_)==3,1,0)
+cogn1[is.na(ola1$cf003_)] <- 0
+
+cogn2 <- ifelse(as.numeric(ola1$cf004_)==3,1,0)
+cogn2[is.na(ola1$cf004_)] <- 0
+
+cogn3 <- ifelse(as.numeric(ola1$cf005_)==3,1,0)
+cogn3[is.na(ola1$cf005_)] <- 0
+
+cogn4 <- ifelse(as.numeric(ola1$cf006_)==3,1,0)
+cogn4[is.na(ola1$cf006_)] <- 0
+
+comp1 <- cogn1+cogn2+cogn3+cogn4
+comp2 <- with(ola1,cf008tot+cf016tot)
+comp2[is.na(comp2)] <- 0
+
+comp3 <- ola1$numeracy
+
+cognitive <- comp1 + comp2 + comp3
+cognitive[is.na(cognitive)] <- 0
+
+```
+
+## Análisis exploratorio
+
+No sé si esta sección debería ir aquí o en la parte de resultados.
+
+Nuestro objetivo principal es ver si influye la edad (que cambia en cada ola) y la cohorte de pertenencia(que no cambia por olas) en la participación, y aquí se  mostrarían los gráficos exploratorios
+
+
+## El modelo logístico mixto (o multinivel).
+
+Explicar por qué se opta por un modelo multinivel. En primer lugar porque tenemos datos longitudinales y las respuestas de un mismo individuo en las distintas olas están relacionadas. En este caso un modelo logístico normal no es adecuado porque no se cumple la asunción de que las observaciones se distribuyen de forma independiente e idénticamente distribuidas. 
+
+Se incluyen también otras variables de agrupación (grouping variables) como efectos aleatorios. Para ver dónde una variable de agrupación se ha de considerar como efecto aleatorio o fijo ver libro de Gelman and Hill o el de Zuur. En el de Gelman básicamente se dice que puedes considerar cualquier variable de agrupación como si fuera un efecto aleatorio y que en ningún caso sería peor que considerarla como fijas. 
+
+Los efectos aleatorios que hemos considerado son, aparte del de individuo (mejor ponemos Subject), son los de cohorte de pertenencia y el de país. Esto implica que consideramos que hay una estructura de correlación entre observaciones de la misma cohorte y entre observaciones del mismo país. De esta forma podemos separar el efecto de la cohortes (que no cambian a lo largo del tiempo) del de la edad.
+Mediante el coeficiente de correlación intraclase vamos a poder estimar qué proporción de la variabilidad de participación se debe a las diferencias entre individuos, a las diferencias entre cohortes y a las diferencias entre países.
+
+Así pues, tendremos un modelo con varios niveles.
+
+Nivel 1. Observaciones de los entrevistados en cada ola. 
+Nivel 2. Entrevistados. 
+Nivel 3. Cohortes de pertenencia. 
+Nivel 4. País del entrevistado.
+
+
+Una vez que se tiene la estructura de efectos aleatorios se pueden incluir los efectos fijos, que podrían ser covariables a distintos niveles.
+
+Posibles covariables según nivel
+
+nivel 1 : En este nivel podrían entrar variables que cambien en cadda ola, tipícamente la edad, aunque también podría ser los años de educación u otras características como salud autopercibida etc.
+nivel 2: En este nivel serían variables intrínsecas al entrevistado y que no varían a lo largo del estudio, como el sexo u otras características.
+nivel 3: Variables q
+
+
+
+## Resultados
